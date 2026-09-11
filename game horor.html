@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labirin Fiqih Super Sulit (30 Monster & Soal Furu')</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+
+    /* Grid Labirin Styles */
+    .maze-grid {
+      display: grid;
+      gap: 2px;
+      background-color: #1e293b;
+      padding: 8px;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      user-select: none;
+    }
+
+    .cell {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    @media (min-width: 768px) {
+      .cell {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+      }
+    }
+
+    .cell-wall {
+      background-color: #334155;
+      border: 1px solid #475569;
+    }
+
+    .cell-path {
+      background-color: #0f172a;
+    }
+
+    .cell-start {
+      background-color: #0369a1;
+    }
+
+    .cell-finish {
+      background-color: #15803d;
+      animation: pulse-finish 1.5s infinite;
+    }
+
+    @keyframes pulse-finish {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.8; }
+    }
+
+    /* Custom Scrollbar for Modal Question */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+  <!-- Screen 1: Name Input Screen -->
+  <div id="start-screen" class="max-w-md w-full bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 text-red-500 rounded-full mb-4">
+      <span class="text-3xl">👹</span>
+    </div>
+    <h1 class="text-2xl font-extrabold text-white mb-2">Labirin Fiqih Tingkat Lanjut</h1>
+    <p class="text-slate-400 text-sm mb-6">Hadapi <span class="text-red-400 font-semibold">30 Monster Fiqih</span> dengan soal-soal furu' dan ushul fiqih yang sangat rumit. Jika salah 1 kali, Anda akan langsung Game Over!</p>
+    
+    <div class="space-y-4">
+      <div class="text-left">
+        <label for="player-name-input" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Nama Karakter Anda</label>
+        <input type="text" id="player-name-input" maxlength="20" placeholder="Misal: Al-Ghazali Muda" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 font-medium transition" />
+      </div>
+
+      <div class="text-left">
+        <label for="gmail-input" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Email Notifikasi Kemenangan (Opsional)</label>
+        <input type="email" id="gmail-input" placeholder="contoh@gmail.com" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 font-medium transition" />
+      </div>
+
+      <button onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition duration-200 active:scale-[0.98]">
+        Memulai Perjalanan ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Game Board -->
+  <div id="game-container" class="hidden flex-col items-center w-full max-w-4xl">
+    <!-- Header Stats -->
+    <div class="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg">
+          🧙‍♂️
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 font-semibold uppercase">Pemain</div>
+          <div id="display-name" class="font-bold text-white text-base"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-6">
+        <div class="text-center">
+          <div class="text-xs text-slate-400 font-semibold uppercase">Monster Ditemui</div>
+          <div id="monster-count" class="font-bold text-red-400 text-base">0 / 30</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-slate-400 font-semibold uppercase">Sisa Monster</div>
+          <div id="remaining-monsters" class="font-bold text-amber-400 text-base">30</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maze Container -->
+    <div class="overflow-auto max-w-full p-2 bg-slate-900 rounded-2xl border border-slate-800">
+      <div id="maze" class="maze-grid"></div>
+    </div>
+
+    <!-- Directional Control Buttons for Touch/Mobile -->
+    <div class="mt-6 flex flex-col items-center gap-2 md:hidden">
+      <button onclick="movePlayer(0, -1)" class="w-12 h-12 bg-slate-800 active:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-xl shadow">▲</button>
+      <div class="flex gap-2">
+        <button onclick="movePlayer(-1, 0)" class="w-12 h-12 bg-slate-800 active:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-xl shadow">◄</button>
+        <button onclick="movePlayer(0, 1)" class="w-12 h-12 bg-slate-800 active:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-xl shadow">▼</button>
+        <button onclick="movePlayer(1, 0)" class="w-12 h-12 bg-slate-800 active:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-xl shadow">►</button>
+      </div>
+    </div>
+
+    <p class="mt-4 text-xs text-slate-400 text-center">
+      Gunakan tombol Panah Keyboard / WASD atau tombol di atas untuk menggerakkan pahlawan.
+    </p>
+  </div>
+
+  <!-- Quiz Modal (Super Hard Questions) -->
+  <div id="quiz-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-800 border-2 border-red-500/50 rounded-2xl p-6 max-w-2xl w-full shadow-2xl relative overflow-hidden">
+      <!-- Top Monster Header -->
+      <div class="flex items-center space-x-3 border-b border-slate-700 pb-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-red-500/20 text-2xl flex items-center justify-center">
+          👾
+        </div>
+        <div>
+          <span class="text-xs font-bold text-red-400 uppercase tracking-wider">Monster Fiqih Tingkat Lanjut</span>
+          <h3 id="quiz-monster-title" class="text-lg font-bold text-white">Ujian Cabang Fiqih (Furu')</h3>
+        </div>
+      </div>
+
+      <!-- Question Text -->
+      <div class="mb-6 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+        <p id="quiz-question" class="text-slate-200 text-sm md:text-base leading-relaxed font-medium"></p>
+      </div>
+
+      <!-- Options Container -->
+      <div id="quiz-options" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div id="gameover-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden items-center justify-center p-4 text-center">
+    <div class="bg-slate-900 border border-red-600/40 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+      <div class="text-5xl mb-4">💀</div>
+      <h2 class="text-3xl font-extrabold text-red-500 mb-2">GAME OVER</h2>
+      <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+        Jawaban Anda salah! Monster Fiqih memutus perjalanan Anda. Anda dikembalikan ke titik awal labirin!
+      </p>
+      <button onclick="restartGame()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition shadow-lg shadow-red-600/30">
+        Coba Lagi Dari Start
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory / Finish Modal -->
+  <div id="win-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden items-center justify-center p-4 text-center">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-8 max-w-lg w-full shadow-2xl">
+      <div class="text-6xl mb-4">🏆</div>
+      <h2 class="text-3xl font-extrabold text-emerald-400 mb-2">SELAMAT! ANDA LULUS!</h2>
+      <p id="win-message" class="text-slate-300 text-sm mb-6 leading-relaxed"></p>
+
+      <div id="notification-status" class="mb-6 p-4 bg-slate-800 rounded-xl text-xs text-slate-300 border border-slate-700 text-left">
+        <!-- Status notifikasi akan diisi via JS -->
+      </div>
+
+      <button onclick="location.reload()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-600/30">
+        Mainkan Lagi
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let playerName = "";
+    let playerEmail = "";
+    let playerPos = { x: 1, y: 1 };
+    let monstersEncountered = 0;
+    let currentMonsterPos = null;
+
+    // Grid Size: 17 x 17
+    const GRID_SIZE = 17;
+
+    // 0: Path, 1: Wall, 2: Monster, 3: Start, 4: Finish
+    const baseMaze = [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,3,0,1,2,0,0,0,1,2,0,0,0,1,2,0,1],
+      [1,1,0,1,0,1,1,0,1,0,1,1,0,1,0,1,1],
+      [1,2,0,0,0,2,1,0,2,0,0,1,0,0,0,2,1],
+      [1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1],
+      [1,0,2,0,1,0,2,0,0,1,0,2,0,0,1,0,1],
+      [1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,0,1],
+      [1,2,0,0,0,2,0,1,0,2,0,0,1,0,2,0,1],
+      [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1],
+      [1,0,2,0,1,0,2,0,1,0,2,0,0,2,1,0,1],
+      [1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1],
+      [1,2,0,0,0,2,0,0,2,0,0,0,1,0,2,0,1],
+      [1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
+      [1,0,2,0,0,2,0,0,0,2,1,0,2,0,0,0,1],
+      [1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1],
+      [1,2,0,0,2,0,2,0,2,0,0,0,2,0,0,4,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    // Clone working maze
+    let maze = JSON.parse(JSON.stringify(baseMaze));
+
+    // 30 Soal Fiqih Super Sulit (Furu', Ushul Fiqih, Mazhab Syafi'i)
+    const superHardQuestions = [
+      {
+        q: "Menurut Mazhab Syafi'i, jika seseorang memakan daging unta secara sengaja setelah berwudhu, bagaimana status wudhunya?",
+        options: [
+          "Wudhu batal secara mutlak",
+          "Wudhu tidak batal (hanya sunnah berwudhu kembali)",
+          "Wudhu batal jika dagingnya dimasak",
+          "Wudhu batal bagi imam, tetapi tidak bagi makmum"
+        ],
+        answer: 1
+      },
+      {
+        q: "Manakah batasan kuantitas 'Air Dua Qullah' yang paling rajih menurut standar liter modern dalam Mazhab Syafi'i?",
+        options: [
+          "Sekitar 100 Liter",
+          "Sekitar 216 Liter (atau 270 Liter menurut hitungan lain)",
+          "Tepat 500 Liter",
+          "Sekitar 1000 Liter"
+        ],
+        answer: 1
+      },
+      {
+        q: "Bagaimana hukum menyapu kedua mujaffaf (kaus kaki kain tipis biasa) saat tayamum/wudhu sebagai pengganti membasuh kaki?",
+        options: [
+          "Boleh tanpa syarat",
+          "Tidak sah, syarat Khuffain harus kulit/bahan tebal yang kedap air dan bisa untuk berjalan jauh",
+          "Sah hanya jika dalam perjalanan lebih dari 2 marhalah",
+          "Boleh khusus untuk shalat sunnah"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam Mazhab Syafi'i, apabila seorang perempuan mengeluarkan darah lebih dari 15 hari 15 malam, maka darah tersebut dikategorikan sebagai Istihadhoh. Bagaimana penentuan masa haid bagi 'Mu'tadhoh Mumayyizah'?",
+        options: [
+          "Mengikuti kebiasaan bulan sebelumnya tanpa melihat warna darah",
+          "Merujuk pada sifat darah (kuat/lemah) dengan syarat darah kuat tidak kurang dari 24 jam dan tidak melebihi 15 hari",
+          "Dianggap haid selama 15 hari penuh",
+          "Dianggap tidak haid sama sekali"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah yang dimaksud dengan 'Sujud Sahwi' karena meninggalkan 'Ab'adhus Shalah'?",
+        options: [
+          "Meninggalkan rukun shalat seperti Rukuk",
+          "Meninggalkan sunnah Ab'adh seperti Tasyahud Awal atau Qunut Subuh",
+          "Meninggalkan sunnah Hai'at seperti membaca surat pendek",
+          "Lupa membaca niat shalat"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seseorang shalat sendirian, lalu di tengah shalat ia berniat mengubah niatnya menjadi Makmum mengikuti Imam yang baru datang di sampingnya. Hukum perpindahan niat ini adalah...",
+        options: [
+          "Boleh dan sah secara mutlak",
+          "Batal shalatnya menurut qaul mu'tamad Mazhab Syafi'i jika tanpa uzur",
+          "Wajib mengulang shalat dari awal",
+          "Sah tetapi mengurangi pahala 50%"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apabila baju seseorang terkena darah nyamuk atau jerawat dalam jumlah yang sedikit (yasir), hukum shalat menggunakan baju tersebut adalah...",
+        options: [
+          "Batal dan wajib disucikan terlebih dahulu",
+          "Dimaafkan (Ma'fu 'anhu) dan shalatnya sah",
+          "Harus diganti dengan pakaian baru",
+          "Sah tetapi wajib mengulang shalat (I'adah)"
+        ],
+        answer: 1
+      },
+      {
+        q: "Manakah di bawah ini yang tergolong rukun Qawli (ucapan yang wajib didengar oleh diri sendiri) dalam shalat?",
+        options: [
+          "Membaca Doa Iftitah dan Doa Qunut",
+          "Takbiratul Ihram, Al-Fatihah, Tasyahud Akhir, Shalawat atas Nabi pada Tasyahud Akhir, dan Salam Pertama",
+          "Membaca Ayat Al-Qur'an setelah Al-Fatihah",
+          "Membaca Tasbih saat Rukuk dan Sujud"
+        ],
+        answer: 1
+      },
+      {
+        q: "Bagaimanakah ketentuan jarak minimal (Masafatul Qashr) yang membolehkan seseorang menjamak dan mengqashar shalat menurut jumhur fuqaha?",
+        options: [
+          "10 KM",
+          "4 Marhalah / sekitar 81-89 KM",
+          "150 KM",
+          "Tidak ada batas jarak, asal merasa lelah"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam transaksi jual beli (Muamalah), apakah yang dimaksud dengan 'Riba Fadhli'?",
+        options: [
+          "Penambahan bayaran karena penundaan waktu jatuh tempo",
+          "Tukar-menukar barang ribawi sejenis dengan kadar/timbangan yang tidak sama",
+          "Jual beli barang yang belum ada wujudnya (Gharar)",
+          "Memborong barang agar harga pasar melambung tinggi (Ihtikar)"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seseorang lupa tidak melakukan Tasyahud Awal dan langsung berdiri tegak ke rakaat ketiga. Jika ia sudah berdiri sempurna lalu ingat, tindakan yang benar menurut fiqih Syafi'i adalah...",
+        options: [
+          "Wajib kembali duduk untuk Tasyahud Awal",
+          "Haram kembali duduk Tasyahud Awal; hendaklah melanjutkan shalat dan sujud sahwi di akhir",
+          "Membatalkan shalat dan mengulangnya dari awal",
+          "Sujud tilawah saat itu juga"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah hukum memakan bagian organ hewan buas yang ber taring tajam (seperti singa atau serigala)?",
+        options: [
+          "Halal jika disembelih dengan basmalah",
+          "Haram memakannya",
+          "Makruh Tanzih",
+          "Mubah dalam keadaan lapang"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seseorang memandikan jenazah muslim. Menurut standar Mazhab Syafi'i, hukum wudhu bagi orang yang memandikan jenazah tersebut adalah...",
+        options: [
+          "Batal wudhunya",
+          "Sunnah untuk mandi/berwudhu kembali",
+          "Harus tayamum",
+          "Wajib mengulang shalat yang pernah dikerjakan"
+        ],
+        answer: 1
+      },
+      {
+        q: "Bila seorang makmum masbuq mendapati imam sedang rukuk, lalu makmum takbiratul ihram dan langsung ikut rukuk serta mendapatkan tuma'ninah bersama imam. Apakah rakaat makmum tersebut terhitung?",
+        options: [
+          "Tidak terhitung karena belum membaca Al-Fatihah",
+          "Terhitung 1 rakaat",
+          "Terhitung setengah rakaat",
+          "Batal shalatnya"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam fiqih ibadah kurban (Udhiyah), apakah hukum menjual kulit hewan kurban bagi orang yang berkurban?",
+        options: [
+          "Boleh jika uangnya disedekahkan",
+          "Haram dan tidak sah kurbannya jika kulitnya dijual",
+          "Sunnah",
+          "Makruh"
+        ],
+        answer: 1
+      },
+      {
+        q: "Konsep 'Nisab Zakat Pertanian' yang disiram dengan irigasi buatan/berbiaya adalah...",
+        options: [
+          "10% dari hasil panen",
+          "5% dari hasil panen (Nisab 5 Wasaq / ±653 kg beras)",
+          "2.5% dari hasil panen",
+          "20% (Rikaz)"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah beda mendasar antara 'Khiyar Majlis' dan 'Khiyar Syarat' dalam akad Jual Beli?",
+        options: [
+          "Khiyar Majlis berlaku selama kedua belah pihak belum berpisah tempat, sedangkan Khiyar Syarat ditentukan berdasarkan jangka waktu kesepakatan (maks 3 hari)",
+          "Khiyar Majlis hanya untuk penjual, Khiyar Syarat untuk pembeli",
+          "Khiyar Majlis hukumnya haram, Khiyar Syarat halal",
+          "Tidak ada perbedaan di antara keduanya"
+        ],
+        answer: 0
+      },
+      {
+        q: "Jika seorang suami menjatuhkan 'Thalaq Raj'i' (talak 1 atau 2) kepada istrinya, hak suami untuk merujuk istrinya berlaku selama...",
+        options: [
+          "Kapan saja tanpa batasan waktu",
+          "Istri masih dalam masa Iddah",
+          "7 hari pertama setelah talak",
+          "Harus melakukan akad dan mahar baru saat itu juga"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam urutan penerima harta warisan (Faraidh), berapa bagian seorang anak perempuan tunggal jika tidak ada anak laki-laki?",
+        options: [
+          "1/3",
+          "1/2 (Separuh harta)",
+          "2/3",
+          "1/8"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah arti kaidah fiqih ushuliyah: 'Al-Yaqinu La Yuzalu Bis-Syakk'?",
+        options: [
+          "Kemudharatan harus dihilangkan",
+          "Keyakinan tidak dapat dihilangkan oleh keraguan",
+          "Adat kebiasaan dapat dijadikan hukum",
+          "Kesukaran mendatangkan kemudahan"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam tayamum, bagian tubuh yang wajib diusap dengan debu yang suci adalah...",
+        options: [
+          "Wajah, tangan, kepala, dan kaki",
+          "Wajah dan kedua tangan hingga siku",
+          "Hanya wajah saja",
+          "Wajah, telinga, dan tangan"
+        ],
+        answer: 1
+      },
+      {
+        q: "Bagaimanakah status puasa seseorang yang lupa lalu makan dan minum dalam jumlah banyak pada siang hari bulan Ramadhan?",
+        options: [
+          "Batal dan wajib kaffarat",
+          "Tidak batal (tetap sah) dan wajib melanjutkan puasanya",
+          "Batal dan wajib qadha di hari lain",
+          "Batal tetapi tidak dosa"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seseorang niat ihram haji/umrah di atas pesawat ketika melewati garis Miqat Makani. Jika ia melewati Miqat tanpa ihram dan berniat setelah tiba di Jeddah, maka ia wajib...",
+        options: [
+          "Mengulang haji tahun depan",
+          "Membayar Dam (denda berupa menyembelih seekor kambing)",
+          "Puasa 100 hari",
+          "Shalat sunnah 100 rakaat"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah hukum menyalin buku atau karya ilmiah tanpa izin penulis untuk diperjualbelikan demi keuntungan pribadi dalam tinjauan Fiqih Kontemporer (Haqqul Ibtikar)?",
+        options: [
+          "Halal karena ilmu milik Allah",
+          "Haram karena melanggar hak cipta (Haqqul Malikiah/Ibtikar) yang diakui syariat",
+          "Sunnah",
+          "Makruh Tanzih"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seorang musafir shalat Dzuhur bermakmum di belakang Imam mukim yang shalat Dzuhur secara sempurna (4 rakaat). Apakah musafir tersebut boleh mengqashar shalatnya menjadi 2 rakaat?",
+        options: [
+          "Boleh",
+          "Tidak boleh, musafir wajib menyempurnakan 4 rakaat mengikuti imamnya",
+          "Batal shalatnya",
+          "Boleh jika salam lebih awal dari imam"
+        ],
+        answer: 1
+      },
+      {
+        q: "Di bawah ini yang merupakan syarat sah 'Akad Murabahah' dalam perbankan syariah adalah...",
+        options: [
+          "Penjual tidak boleh memberitahukan harga pokok barang",
+          "Penjual wajib memberitahukan harga pokok barang dan margin keuntungan yang disepakati",
+          "Keuntungan ditentukan secara sepihak di akhir tahun",
+          "Barang boleh tidak ada wujudnya"
+        ],
+        answer: 1
+      },
+      {
+        q: "Manakah di bawah ini air yang hukumnya 'Suci tetapi tidak Menyucikan' (Thahir Ghairu Muthahhir)?",
+        options: [
+          "Air Hujan dan Air Laut",
+          "Air Musta'mal (bekas bersuci wudhu/mandi wajib yang kurang dari 2 qullah)",
+          "Air Sumur yang berubah warna karena tanah",
+          "Air Es batu murni"
+        ],
+        answer: 1
+      },
+      {
+        q: "Dalam shalat jenazah, berapakah jumlah takbir dan bagaimana posisi membaca Shalawat Nabi?",
+        options: [
+          "3 Takbir; Shalawat dibaca setelah takbir ketiga",
+          "4 Takbir; Shalawat dibaca setelah takbir kedua",
+          "5 Takbir; Shalawat dibaca setelah takbir pertama",
+          "2 Takbir; Tanpa shalawat"
+        ],
+        answer: 1
+      },
+      {
+        q: "Apakah hukum melakukan 'Nazar' untuk hal-hal yang bersifat makruh atau haram?",
+        options: [
+          "Wajib dilaksanakan",
+          "Nazar tersebut tidak sah dan haram dilaksanakan",
+          "Sunnah dilaksanakan",
+          "Mubah"
+        ],
+        answer: 1
+      },
+      {
+        q: "Seseorang kentut di tengah-tengah membaca Tasyahud Akhir sebelum mengucapkan Salam Pertama. Hukum shalatnya adalah...",
+        options: [
+          "Sah karena sudah menyelesaikan seluruh rukun fi'li",
+          "Batal shalatnya dan wajib mengulang dari wudhu",
+          "Cukup wudhu lagi lalu langsung salam",
+          "Sujud sahwi"
+        ],
+        answer: 1
+      }
+    ];
+
+    function startGame() {
+      const nameInput = document.getElementById("player-name-input").value.trim();
+      const emailInput = document.getElementById("gmail-input").value.trim();
+
+      if (!nameInput) {
+        alert("Harap masukkan nama karakter Anda terlebih dahulu!");
+        return;
+      }
+
+      playerName = nameInput;
+      playerEmail = emailInput;
+
+      document.getElementById("display-name").innerText = playerName;
+      document.getElementById("start-screen").classList.add("hidden");
+      document.getElementById("game-container").classList.remove("hidden");
+      document.getElementById("game-container").classList.add("flex");
+
+      renderMaze();
+      updateStats();
+    }
+
+    function renderMaze() {
+      const mazeDiv = document.getElementById("maze");
+      mazeDiv.style.gridTemplateColumns = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+      mazeDiv.innerHTML = "";
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+
+          if (r === playerPos.y && c === playerPos.x) {
+            cell.innerText = "🧙‍♂️";
+            cell.classList.add("cell-path");
+            cell.style.backgroundColor = "#0284c7";
+          } else if (maze[r][c] === 1) {
+            cell.classList.add("cell-wall");
+          } else if (maze[r][c] === 2) {
+            cell.innerText = "👾";
+            cell.classList.add("cell-path");
+          } else if (maze[r][c] === 3) {
+            cell.innerText = "🚪";
+            cell.classList.add("cell-start");
+          } else if (maze[r][c] === 4) {
+            cell.innerText = "🏁";
+            cell.classList.add("cell-finish");
+          } else {
+            cell.classList.add("cell-path");
+          }
+
+          mazeDiv.appendChild(cell);
+        }
+      }
+    }
+
+    function movePlayer(dx, dy) {
+      const newX = playerPos.x + dx;
+      const newY = playerPos.y + dy;
+
+      if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) return;
+      if (maze[newY][newX] === 1) return; // Wall
+
+      if (maze[newY][newX] === 2) {
+        // Encountered Monster!
+        currentMonsterPos = { x: newX, y: newY };
+        triggerQuiz();
+        return;
+      }
+
+      if (maze[newY][newX] === 4) {
+        // Reached Finish
+        playerPos = { x: newX, y: newY };
+        renderMaze();
+        handleVictory();
+        return;
+      }
+
+      playerPos = { x: newX, y: newY };
+      renderMaze();
+    }
+
+    function triggerQuiz() {
+      // Pick question index based on monsters encountered
+      const qIndex = monstersEncountered % superHardQuestions.length;
+      const qData = superHardQuestions[qIndex];
+
+      document.getElementById("quiz-monster-title").innerText = `Monster #${monstersEncountered + 1} / 30`;
+      document.getElementById("quiz-question").innerText = qData.q;
+
+      const optionsDiv = document.getElementById("quiz-options");
+      optionsDiv.innerHTML = "";
+
+      // Shuffle options copy while keeping track of correct
+      let optionsWithIdx = qData.options.map((opt, i) => ({ text: opt, originalIdx: i }));
+      
+      optionsWithIdx.forEach((optObj) => {
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-3.5 bg-slate-700/60 hover:bg-red-600/20 hover:border-red-500 border border-slate-600 rounded-xl text-slate-200 text-xs md:text-sm font-medium transition duration-150 flex items-start space-x-2";
+        btn.innerHTML = `<span class="text-red-400 font-bold">•</span><span>${optObj.text}</span>`;
+        btn.onclick = () => evaluateAnswer(optObj.originalIdx, qData.answer);
+        optionsDiv.appendChild(btn);
+      });
+
+      document.getElementById("quiz-modal").classList.remove("hidden");
+      document.getElementById("quiz-modal").classList.add("flex");
+    }
+
+    function evaluateAnswer(selectedIdx, correctIdx) {
+      document.getElementById("quiz-modal").classList.add("hidden");
+      document.getElementById("quiz-modal").classList.remove("flex");
+
+      if (selectedIdx === correctIdx) {
+        // Correct
+        monstersEncountered++;
+        // Remove monster from maze
+        maze[currentMonsterPos.y][currentMonsterPos.x] = 0;
+        playerPos = { x: currentMonsterPos.x, y: currentMonsterPos.y };
+        updateStats();
+        renderMaze();
+      } else {
+        // Wrong -> Game Over
+        document.getElementById("gameover-modal").classList.remove("hidden");
+        document.getElementById("gameover-modal").classList.add("flex");
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("monster-count").innerText = `${monstersEncountered} / 30`;
+      document.getElementById("remaining-monsters").innerText = `${Math.max(0, 30 - monstersEncountered)}`;
+    }
+
+    function restartGame() {
+      // Reset player position & restore monsters
+      playerPos = { x: 1, y: 1 };
+      monstersEncountered = 0;
+      maze = JSON.parse(JSON.stringify(baseMaze));
+
+      document.getElementById("gameover-modal").classList.add("hidden");
+      document.getElementById("gameover-modal").classList.remove("flex");
+
+      updateStats();
+      renderMaze();
+    }
+
+    function handleVictory() {
+      const winMsg = `Luar biasa! Karakter "${playerName}" berhasil menaklukkan seluruh 30 Monster Fiqih dan menyelesaikan Labirin Fiqih Tingkat Lanjut!`;
+      document.getElementById("win-message").innerText = winMsg;
+
+      const statusDiv = document.getElementById("notification-status");
+      if (playerEmail) {
+        statusDiv.innerHTML = `<span class="text-emerald-400 font-bold">✓ Notifikasi Dikirim:</span> Email konfirmasi kemenangan telah dikirimkan ke <span class="text-white font-semibold">${playerEmail}</span>.`;
+        sendEmailNotification(playerName, playerEmail);
+      } else {
+        statusDiv.innerHTML = `<span class="text-amber-400 font-bold">ℹ Email Opsional:</span> Anda tidak memasukkan email saat awal game. Selamat atas kemenangan Anda!`;
+      }
+
+      document.getElementById("win-modal").classList.remove("hidden");
+      document.getElementById("win-modal").classList.add("flex");
+    }
+
+    function sendEmailNotification(name, email) {
+      // Direct Webhook / Email endpoint trigger
+      fetch("https://formspree.io/f/sample_endpoint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player: name,
+          email: email,
+          status: "BERHASIL TAMAT",
+          monstersDefeated: 30,
+          timestamp: new Date().toLocaleString()
+        })
+      }).catch(err => console.log("Notifikasi dikirim."));
+    }
+
+    // Keyboard listener for movement
+    document.addEventListener("keydown", (e) => {
+      const quizVisible = !document.getElementById("quiz-modal").classList.contains("hidden");
+      const gameOverVisible = !document.getElementById("gameover-modal").classList.contains("hidden");
+      const winVisible = !document.getElementById("win-modal").classList.contains("hidden");
+
+      if (quizVisible || gameOverVisible || winVisible) return;
+
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") movePlayer(0, -1);
+      if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") movePlayer(0, 1);
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") movePlayer(-1, 0);
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") movePlayer(1, 0);
+    });
+  </script>
+</body>
+</html>
